@@ -1,0 +1,8 @@
+# Copy to personal.auto.tfvars and fill in. personal.auto.tfvars is git-ignored - never commit it.
+# Only values that are personal to YOU go here; environment settings are in lab.auto.tfvars (committed).
+owner       = "your-name"
+my_ip_cidr  = "203.0.113.10/32" # curl -s https://checkip.amazonaws.com  then add /32
+alert_email = "you@example.com"
+
+# cat ~/.ssh/devops-lab.pub  (the PUBLIC key - never the private one)
+ssh_public_key = "ssh-ed25519 AAAA... you@laptop"

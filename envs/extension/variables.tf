@@ -1,5 +1,4 @@
-# This stack reuses envs/lab/terraform.tfvars (copy it here). Variables that only exist in the
-# other stack produce a harmless "undeclared variable" warning.
+# Values: extension.auto.tfvars (environment settings, committed) + personal.auto.tfvars (owner, alert_email; git-ignored).
 variable "region" {
   type    = string
   default = "us-west-2"
@@ -25,7 +24,7 @@ variable "app_namespaces" {
   default     = ["dev", "staging", "prod"]
 }
 
-# ---- Optional features (toggle in terraform.tfvars) ----
+# ---- Optional features (toggle in extension.auto.tfvars) ----
 variable "enable_s3_replication" {
   description = "Replicate exports to a bucket in dr_region (Day 16 exercise)"
   type        = bool

@@ -3,7 +3,11 @@
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# Environment configuration IS committed (reviewed like code); personal values are not
+!lab.auto.tfvars
+!extension.auto.tfvars
 *.tfplan
 tfplan
+plan.txt
 crash.log
 .build/
