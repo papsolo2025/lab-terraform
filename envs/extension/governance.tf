@@ -4,7 +4,7 @@
 resource "aws_s3_bucket" "audit" {
   count         = var.enable_cloudtrail || var.enable_config ? 1 : 0
   bucket        = "${local.name}-audit-logs-${local.account_id}"
-  force_destroy = true
+  force_destroy = !var.protect_data # set protect_data = false only right before teardown
 }
 
 resource "aws_s3_bucket_public_access_block" "audit" {

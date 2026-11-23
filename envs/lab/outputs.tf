@@ -69,3 +69,12 @@ output "db_identifier" {
 output "cluster_arn" {
   value = module.eks.cluster_arn
 }
+
+output "node_security_group_id" {
+  description = "EKS worker node security group - use it as the SOURCE in rules that should allow pods"
+  value       = module.eks.node_security_group_id
+}
+
+output "jenkins_security_group_id" {
+  value = aws_security_group.role["jenkins"].id
+}

@@ -2,16 +2,18 @@
 # Compare with EBS (one node at a time, one AZ) used by Prometheus, and S3 (objects over an API).
 resource "aws_security_group" "efs" {
   name        = "${local.name}-efs"
-  description = "NFS from inside the VPC"
+  description = "NFS from the EKS nodes only"
   vpc_id      = local.lab.vpc_id
 }
 
+# Only the EKS nodes (where the pods mounting EFS run) may reach NFS - not every resource in the VPC.
 resource "aws_vpc_security_group_ingress_rule" "efs_nfs" {
-  security_group_id = aws_security_group.efs.id
-  cidr_ipv4         = local.lab.vpc_cidr
-  from_port         = 2049
-  to_port           = 2049
-  ip_protocol       = "tcp"
+  security_group_id            = aws_security_group.efs.id
+  description                  = "NFS from EKS nodes"
+  referenced_security_group_id = local.lab.node_security_group_id
+  from_port                    = 2049
+  to_port                      = 2049
+  ip_protocol                  = "tcp"
 }
 
 resource "aws_efs_file_system" "shared" {
@@ -84,7 +86,7 @@ resource "aws_efs_file_system_policy" "shared" {
 # ---- EFS CSI driver add-on (Kubernetes creates EFS access points for each PVC) ----
 module "efs_csi_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 2.0"
+  version = "2.11.0"
 
   name                      = "${local.name}-efs-csi"
   attach_aws_efs_csi_policy = true

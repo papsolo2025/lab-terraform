@@ -13,11 +13,12 @@ resource "aws_key_pair" "lab" {
 }
 
 locals {
+  # sgs = the role's own security group; every server also gets the shared "servers" group
   servers = {
-    jenkins = { type = "t3.medium", disk = 40, role = "jenkins", profile = aws_iam_instance_profile.jenkins.name, backup = "false" }
-    tools   = { type = "t3.xlarge", disk = 60, role = "tools", profile = aws_iam_instance_profile.base.name, backup = "true" }
-    web-1   = { type = "t3.micro", disk = 12, role = "web", profile = aws_iam_instance_profile.base.name, backup = "false" }
-    web-2   = { type = "t3.micro", disk = 12, role = "web", profile = aws_iam_instance_profile.base.name, backup = "false" }
+    jenkins = { type = "t3.medium", disk = 40, role = "jenkins", profile = aws_iam_instance_profile.jenkins.name, backup = "false", sgs = ["jenkins"] }
+    tools   = { type = "t3.xlarge", disk = 60, role = "tools", profile = aws_iam_instance_profile.base.name, backup = "true", sgs = ["tools"] }
+    web-1   = { type = "t3.micro", disk = 12, role = "web", profile = aws_iam_instance_profile.base.name, backup = "false", sgs = ["web"] }
+    web-2   = { type = "t3.micro", disk = 12, role = "web", profile = aws_iam_instance_profile.base.name, backup = "false", sgs = ["web"] }
   }
 }
 
@@ -30,7 +31,12 @@ resource "aws_instance" "server" {
   iam_instance_profile        = each.value.profile
   subnet_id                   = module.vpc.public_subnets[0]
   associate_public_ip_address = true # lab simplification; production uses private subnets + SSM/bastion
-  vpc_security_group_ids      = [aws_security_group.admin.id, aws_security_group.internal.id]
+
+  # Least privilege: each server opens only its own ports (e.g. web-1 does not expose 8080)
+  vpc_security_group_ids = concat(
+    [aws_security_group.role["servers"].id],
+    [for sg in each.value.sgs : aws_security_group.role[sg].id],
+  )
 
   root_block_device {
     volume_size = each.value.disk
