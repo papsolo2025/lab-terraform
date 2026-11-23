@@ -6,6 +6,7 @@ All AWS infrastructure for the DevOps lab, as code.
 
 ```bash
 cd envs/lab
-cp terraform.tfvars.example terraform.tfvars   # fill in - never commit
+cp personal.auto.tfvars.example personal.auto.tfvars   # your IP, email, SSH key - git-ignored, never commit
+# Environment settings are in lab.auto.tfvars (committed, reviewed in PRs)
 terraform init && terraform plan -out tfplan && terraform apply tfplan
 ```
