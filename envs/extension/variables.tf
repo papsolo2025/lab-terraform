@@ -71,3 +71,9 @@ variable "enable_config" {
   type        = bool
   default     = false
 }
+
+variable "protect_data" {
+  description = "When true, buckets holding data and logs can't be destroyed while they still contain objects. Set to false (and apply) only right before terraform destroy."
+  type        = bool
+  default     = true
+}

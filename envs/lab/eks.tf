@@ -1,6 +1,6 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 21.0"
+  version = "21.30.2" # exact pin: upgrades are a reviewed PR (bump, init -upgrade, read the plan)
 
   name               = var.cluster_name
   kubernetes_version = var.kubernetes_version
@@ -10,15 +10,15 @@ module "eks" {
   endpoint_public_access_cidrs = [var.my_ip_cidr]
   endpoint_private_access      = true
 
-  # Allow Jenkins (in the VPC, different security group) to reach the private API endpoint.
+  # Only Jenkins (by security group, not the whole VPC) may reach the private API endpoint.
   security_group_additional_rules = {
-    ingress_vpc_https = {
-      description = "Kubernetes API from inside the VPC"
-      protocol    = "tcp"
-      from_port   = 443
-      to_port     = 443
-      type        = "ingress"
-      cidr_blocks = [var.vpc_cidr]
+    ingress_jenkins_https = {
+      description              = "Kubernetes API from Jenkins"
+      protocol                 = "tcp"
+      from_port                = 443
+      to_port                  = 443
+      type                     = "ingress"
+      source_security_group_id = aws_security_group.role["jenkins"].id
     }
   }
 
@@ -62,19 +62,18 @@ module "eks" {
     }
   }
 
-  # Let Jenkins deploy to the cluster.
-  # Lab simplification: cluster admin. Production: namespace-scoped AmazonEKSEditPolicy.
+  # Jenkins: least privilege through Kubernetes RBAC, not cluster admin.
+  # The access entry only maps the Jenkins IAM role to the Kubernetes group "jenkins-deployers";
+  # lab-platform/manifests/jenkins-rbac.yaml grants that group:
+  #   edit in dev, staging, prod (deploy, exec, restart, secrets) incl. ServiceMonitors
+  #   read-only cluster view (nodes, pods, metrics) for health and capacity jobs
+  #   services/proxy in monitoring (PromQL queries from ops jobs)
+  # RBAC is used instead of AmazonEKSEditPolicy because Jenkins also needs CRDs (ServiceMonitor)
+  # and a few cluster-wide reads that the AWS-managed access policies don't cover exactly.
   access_entries = {
     jenkins = {
-      principal_arn = aws_iam_role.jenkins.arn
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
+      principal_arn     = aws_iam_role.jenkins.arn
+      kubernetes_groups = ["jenkins-deployers"]
     }
   }
 }
@@ -82,7 +81,7 @@ module "eks" {
 # IAM for the EBS CSI driver (persistent volumes for Prometheus/Grafana)
 module "ebs_csi_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 2.0"
+  version = "2.11.0"
 
   name                      = "${var.cluster_name}-ebs-csi"
   attach_aws_ebs_csi_policy = true
@@ -91,7 +90,7 @@ module "ebs_csi_pod_identity" {
 # IAM for the AWS Load Balancer Controller (creates ALBs from Ingress objects)
 module "aws_lbc_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
-  version = "~> 2.0"
+  version = "2.11.0"
 
   name                            = "${var.cluster_name}-aws-lbc"
   attach_aws_lb_controller_policy = true

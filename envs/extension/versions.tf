@@ -2,12 +2,12 @@
 # Separate state from envs/lab on purpose: different lifecycle, smaller blast radius,
 # faster plans. It reads what it needs from the lab stack's outputs (terraform_remote_state).
 terraform {
-  required_version = ">= 1.10"
+  required_version = ">= 1.10, < 2.0"
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = "~> 6.73" # exact build locked in .terraform.lock.hcl
     }
     archive = {
       source  = "hashicorp/archive"
@@ -16,7 +16,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "devops-lab-tfstate-REPLACE_WITH_ACCOUNT_ID"
+    bucket       = "devops-lab-tfstate-201224549118"
     key          = "extension/terraform.tfstate"
     region       = "us-west-2"
     encrypt      = true

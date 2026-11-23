@@ -5,7 +5,7 @@
 #          smoke/...                                      test files used by the Lambda pipeline
 resource "aws_s3_bucket" "exports" {
   bucket        = "${local.name}-orders-exports-${local.account_id}"
-  force_destroy = true # lab only
+  force_destroy = !var.protect_data # set protect_data = false only right before teardown
 }
 
 resource "aws_s3_bucket_ownership_controls" "exports" {
@@ -142,7 +142,7 @@ resource "aws_s3_bucket_notification" "exports" {
 # ===================== Artifacts bucket (Lambda deployment packages) =====================
 resource "aws_s3_bucket" "artifacts" {
   bucket        = "${local.name}-lambda-artifacts-${local.account_id}"
-  force_destroy = true
+  force_destroy = !var.protect_data # set protect_data = false only right before teardown
 }
 
 resource "aws_s3_bucket_public_access_block" "artifacts" {
@@ -211,7 +211,7 @@ resource "aws_s3_bucket" "exports_replica" {
   count         = var.enable_s3_replication ? 1 : 0
   provider      = aws.dr
   bucket        = "${local.name}-orders-exports-replica-${local.account_id}"
-  force_destroy = true
+  force_destroy = !var.protect_data # set protect_data = false only right before teardown
 }
 
 resource "aws_s3_bucket_versioning" "exports_replica" {
